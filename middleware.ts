@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -14,8 +13,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
   // Protected: /admin/* and /api/clients/* and /api/upload and /api/crm/keys
   if (
     pathname.startsWith("/admin") ||
@@ -28,6 +25,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
+    // Check for session token cookie (set by next-auth)
+    const token =
+      req.cookies.get("next-auth.session-token")?.value ||
+      req.cookies.get("__Secure-next-auth.session-token")?.value;
+
     if (!token) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,9 +37,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
   }
-
-  // CRM endpoints use API key auth — handled in the route handlers themselves
-  // /api/crm/analytics and /api/crm/clients
 
   return NextResponse.next();
 }
