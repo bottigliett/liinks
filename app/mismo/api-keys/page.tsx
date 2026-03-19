@@ -36,7 +36,7 @@ export default function ApiKeysPage() {
   }, []);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/admin/login");
+    if (status === "unauthenticated") router.push("/mismo/login");
     else if (status === "authenticated") fetchKeys();
   }, [status, router, fetchKeys]);
 
@@ -88,7 +88,7 @@ export default function ApiKeysPage() {
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
-            onClick={() => router.push("/admin")}
+            onClick={() => router.push("/mismo")}
             className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             <IconArrowLeft className="h-5 w-5" />

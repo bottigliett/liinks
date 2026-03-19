@@ -16,7 +16,7 @@ import { AVAILABLE_ICONS } from "@/lib/icons";
 import { BRAND_IMAGES } from "@/lib/brands";
 import { IconRenderer } from "@/components/icon-renderer";
 import { cn } from "@/lib/utils";
-import { InteractivePreview } from "@/components/admin/interactive-preview";
+import { InteractivePreview } from "@/components/mismo/interactive-preview";
 import {
   DndContext,
   closestCenter,
@@ -175,7 +175,7 @@ export default function ClientDetailPage() {
   }, [clientId]);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/admin/login");
+    if (status === "unauthenticated") router.push("/mismo/login");
     else if (status === "authenticated") fetchClient();
   }, [status, router, fetchClient]);
 
@@ -394,7 +394,7 @@ export default function ClientDetailPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/admin")}
+              onClick={() => router.push("/mismo")}
               className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               <IconArrowLeft className="h-5 w-5" />
@@ -516,7 +516,7 @@ export default function ClientDetailPage() {
                   Visualizza le metriche di questo cliente
                 </p>
                 <button
-                  onClick={() => router.push(`/admin/clients/${clientId}/insights`)}
+                  onClick={() => router.push(`/mismo/clients/${clientId}/insights`)}
                   className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
                 >
                   Apri Insights

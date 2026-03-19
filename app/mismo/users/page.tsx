@@ -31,16 +31,16 @@ export default function AdminUsersPage() {
   const currentUser = session?.user as { id?: string; role?: string } | undefined;
 
   const fetchUsers = useCallback(async () => {
-    const res = await fetch("/api/admin/users");
+    const res = await fetch("/api/mismo/users");
     if (res.ok) setUsers(await res.json());
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/admin/login");
+    if (status === "unauthenticated") router.push("/mismo/login");
     else if (status === "authenticated") {
       if (currentUser?.role !== "superadmin") {
-        router.push("/admin");
+        router.push("/mismo");
       } else {
         fetchUsers();
       }
@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
     e.preventDefault();
     setError("");
     setCreating(true);
-    const res = await fetch("/api/admin/users", {
+    const res = await fetch("/api/mismo/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -69,7 +69,7 @@ export default function AdminUsersPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Sei sicuro di voler eliminare questo admin?")) return;
-    const res = await fetch("/api/admin/users", {
+    const res = await fetch("/api/mismo/users", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
-            onClick={() => router.push("/admin")}
+            onClick={() => router.push("/mismo")}
             className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             <IconArrowLeft className="h-5 w-5" />

@@ -131,7 +131,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/admin/login");
+      router.push("/mismo/login");
     } else if (status === "authenticated") {
       fetchClients();
     }
@@ -272,14 +272,14 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push("/admin/api-keys")}
+              onClick={() => router.push("/mismo/api-keys")}
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               <IconKey className="h-4 w-4" />
               API Keys
             </button>
             <button
-              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              onClick={() => signOut({ callbackUrl: "/mismo/login" })}
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
             >
               <IconLogout className="h-4 w-4" />
@@ -903,14 +903,14 @@ export default function AdminPage() {
                   {/* Actions */}
                   <div className="flex shrink-0 items-center gap-2 px-5 pb-5 pt-4">
                     <button
-                      onClick={() => router.push(`/admin/clients/${client.id}`)}
+                      onClick={() => router.push(`/mismo/clients/${client.id}`)}
                       className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
                     >
                       <IconEdit className="h-3.5 w-3.5" />
                       Modifica
                     </button>
                     <button
-                      onClick={() => router.push(`/admin/clients/${client.id}/insights`)}
+                      onClick={() => router.push(`/mismo/clients/${client.id}/insights`)}
                       className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
                       <IconChartBar className="h-3.5 w-3.5" />

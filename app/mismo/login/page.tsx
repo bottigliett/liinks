@@ -26,7 +26,7 @@ export default function LoginPage() {
       setError("Credenziali non valide");
       setLoading(false);
     } else {
-      router.push("/admin");
+      router.push("/mismo");
       router.refresh();
     }
   }

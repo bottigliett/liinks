@@ -59,7 +59,7 @@ export default function InsightsPage() {
   }, [clientId]);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/admin/login");
+    if (status === "unauthenticated") router.push("/mismo/login");
     else if (status === "authenticated") fetchData();
   }, [status, router, fetchData]);
 
@@ -83,7 +83,7 @@ export default function InsightsPage() {
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
-            onClick={() => router.push(`/admin/clients/${clientId}`)}
+            onClick={() => router.push(`/mismo/clients/${clientId}`)}
             className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             <IconArrowLeft className="h-5 w-5" />
