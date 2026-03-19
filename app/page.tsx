@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white">
       <Image
         src="/logo_liinks.svg"
         alt="Liinks"

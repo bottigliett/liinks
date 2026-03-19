@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
   const currentUser = session?.user as { id?: string; role?: string } | undefined;
 
   const fetchUsers = useCallback(async () => {
-    const res = await fetch("/api/mismo/users");
+    const res = await fetch("/api/admin/users");
     if (res.ok) setUsers(await res.json());
     setLoading(false);
   }, []);
@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
     e.preventDefault();
     setError("");
     setCreating(true);
-    const res = await fetch("/api/mismo/users", {
+    const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -69,7 +69,7 @@ export default function AdminUsersPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Sei sicuro di voler eliminare questo admin?")) return;
-    const res = await fetch("/api/mismo/users", {
+    const res = await fetch("/api/admin/users", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
