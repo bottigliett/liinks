@@ -16,7 +16,7 @@ import { AVAILABLE_ICONS } from "@/lib/icons";
 import { BRAND_IMAGES } from "@/lib/brands";
 import { IconRenderer } from "@/components/icon-renderer";
 import { cn } from "@/lib/utils";
-import { InteractivePreview } from "@/components/mismo/interactive-preview";
+import { InteractivePreview } from "@/components/admin/interactive-preview";
 import {
   DndContext,
   closestCenter,
