@@ -3,6 +3,8 @@ import { getClientBySlug } from "@/lib/data";
 import { ClientStyle, DEFAULT_STYLE } from "@/lib/types";
 import { BentoPage } from "./bento-page";
 
+export const dynamic = "force-dynamic";
+
 export default async function PublicPage({
   params,
 }: {

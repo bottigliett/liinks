@@ -39,6 +39,7 @@ export interface Widget {
 
 export type LayoutAlignment = "center" | "left";
 export type BorderRadius = "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+export type CardStyle = "flat" | "shadow" | "outline" | "brutal";
 
 export interface ClientStyle {
   bgColor: string;
@@ -54,6 +55,7 @@ export interface ClientStyle {
   gridGap: "tight" | "normal" | "loose";
   rowHeight: number;
   iconBorderRadius: number;
+  cardStyle: CardStyle;
 }
 
 export const DEFAULT_STYLE: ClientStyle = {
@@ -70,6 +72,7 @@ export const DEFAULT_STYLE: ClientStyle = {
   gridGap: "normal",
   rowHeight: 140,
   iconBorderRadius: 17,
+  cardStyle: "shadow",
 };
 
 export interface Client {

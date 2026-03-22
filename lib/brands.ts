@@ -6,6 +6,7 @@ export const BRAND_IMAGES = [
   { value: "/brands/logo_tecnocasa_base.png", label: "Tecnocasa" },
   { value: "/brands/logo_tecnorete_base.png", label: "Tecnorete" },
   { value: "/brands/logo-industriale.png", label: "Industriale" },
+  { value: "/brands/contatti.svg", label: "Contatti" },
 ] as const;
 
 // Pre-built templates for new client creation
@@ -41,7 +42,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
         title: "Salva contatto",
         url: "",
         size: "small",
-        icon: "IconPhone",
+        brandImage: "/brands/contatti.svg",
       },
       {
         type: "map",
@@ -83,7 +84,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
         title: "Salva contatto",
         url: "",
         size: "small",
-        icon: "IconPhone",
+        brandImage: "/brands/contatti.svg",
       },
       {
         type: "map",
@@ -124,7 +125,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
         title: "Salva contatto",
         url: "",
         size: "small",
-        icon: "IconPhone",
+        brandImage: "/brands/contatti.svg",
       },
       {
         type: "map",

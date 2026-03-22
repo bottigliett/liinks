@@ -12,7 +12,7 @@ export default function Home() {
         priority
       />
       <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">
-        v0.1 Beta
+        v0.2 Beta
       </p>
     </div>
   );

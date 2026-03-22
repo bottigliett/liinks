@@ -10,6 +10,7 @@ import {
   WidgetType,
   SocialPlatform,
   ClientStyle,
+  CardStyle,
   DEFAULT_STYLE,
 } from "@/lib/types";
 import { AVAILABLE_ICONS } from "@/lib/icons";
@@ -17,6 +18,7 @@ import { BRAND_IMAGES } from "@/lib/brands";
 import { IconRenderer } from "@/components/icon-renderer";
 import { cn } from "@/lib/utils";
 import { InteractivePreview } from "@/components/admin/interactive-preview";
+import { RichBioEditor } from "@/components/admin/rich-bio-editor";
 import {
   DndContext,
   closestCenter,
@@ -58,10 +60,6 @@ import {
   IconX,
   IconMap,
   IconArrowUpRight,
-  IconBold,
-  IconUnderline,
-  IconList,
-  IconArrowBack,
   IconChartBar,
 } from "@tabler/icons-react";
 
@@ -181,6 +179,7 @@ export default function ClientDetailPage() {
 
   async function saveAll() {
     setSaving(true);
+    // Save client info
     await fetch(`/api/clients/${clientId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -195,6 +194,16 @@ export default function ClientDetailPage() {
         style: editStyle,
       }),
     });
+    // Also save any in-progress widget edits
+    if (editingWidgetId && widgetOverrides[editingWidgetId]) {
+      await fetch(`/api/clients/${clientId}/widgets/${editingWidgetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(widgetOverrides[editingWidgetId]),
+      });
+      setEditingWidgetId(null);
+      handleWidgetEditChange(editingWidgetId, null);
+    }
     await fetchClient();
     setSaving(false);
   }
@@ -880,6 +889,33 @@ function StyleTab({
               className="w-full"
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Stile card</label>
+            <div className="flex gap-2">
+              {(["flat", "shadow", "outline", "brutal"] as CardStyle[]).map((cs) => (
+                <button
+                  key={cs}
+                  onClick={() => updateStyle("cardStyle", cs)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                    editStyle.cardStyle === cs
+                      ? "border-zinc-900 bg-zinc-100 text-zinc-900 dark:border-white dark:bg-zinc-800 dark:text-white"
+                      : "border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400",
+                  )}
+                >
+                  <div
+                    className="h-6 w-10 rounded-sm bg-zinc-100 dark:bg-zinc-700"
+                    style={{
+                      border: cs === "outline" || cs === "brutal" ? "2px solid #000" : "1px solid #d4d4d8",
+                      boxShadow: cs === "shadow" ? "0 2px 0px #d4d4d8" : cs === "brutal" ? "3px 3px 0px #000" : "none",
+                      borderRadius: cs === "brutal" ? 0 : 4,
+                    }}
+                  />
+                  {cs === "flat" ? "Piatto" : cs === "shadow" ? "Ombra" : cs === "outline" ? "Bordo" : "Brutal"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1273,9 +1309,9 @@ function SortableWidgetItem({
               onChange={(e) => {
                 const val = e.target.value;
                 if (val) {
-                  setEditData({ ...editData, brandImage: val, icon: undefined });
+                  setEditData({ ...editData, brandImage: val, icon: null as any });
                 } else {
-                  setEditData({ ...editData, brandImage: undefined });
+                  setEditData({ ...editData, brandImage: null as any });
                 }
               }}
               className={inputClass}
@@ -1290,7 +1326,7 @@ function SortableWidgetItem({
             <label className={labelClass}>Icona</label>
             <IconPicker
               value={editData.icon || ""}
-              onChange={(v) => setEditData({ ...editData, icon: v, brandImage: v ? undefined : editData.brandImage })}
+              onChange={(v) => setEditData({ ...editData, icon: v || (null as any), brandImage: v ? (null as any) : editData.brandImage })}
             />
           </div>
           <div>
@@ -1604,67 +1640,6 @@ function WidgetForm({
         </button>
       </div>
     </form>
-  );
-}
-
-// ==========================================
-// RICH BIO EDITOR
-// ==========================================
-function RichBioEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (editorRef.current && !initializedRef.current) {
-      editorRef.current.innerHTML = value;
-      initializedRef.current = true;
-    }
-  }, [value]);
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-700">
-      <div className="flex gap-1 border-b border-zinc-200 bg-zinc-50 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-        <button
-          type="button"
-          onClick={() => document.execCommand("bold")}
-          className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-          title="Grassetto"
-        >
-          <IconBold className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => document.execCommand("underline")}
-          className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-          title="Sottolineato"
-        >
-          <IconUnderline className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => document.execCommand("insertUnorderedList")}
-          className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-          title="Elenco puntato"
-        >
-          <IconList className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => document.execCommand("insertHTML", false, "<br>")}
-          className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-          title="A capo"
-        >
-          <IconArrowBack className="h-4 w-4" />
-        </button>
-      </div>
-      <div
-        ref={editorRef}
-        contentEditable
-        className="min-h-[80px] bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none dark:bg-zinc-800 dark:text-white"
-        style={{ whiteSpace: "pre-wrap" }}
-        onInput={() => onChange(editorRef.current?.innerHTML || "")}
-      />
-    </div>
   );
 }
 

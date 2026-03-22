@@ -11,6 +11,7 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
+  console.log("[PATCH widget]", params.widgetId, "body.icon:", body.icon, "body.brandImage:", body.brandImage);
   const widget = await updateWidget(params.id, params.widgetId, body);
   if (!widget) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(widget);

@@ -69,7 +69,7 @@ function getDefaultTemplateWidgets(clientId: string): Omit<Widget, "id" | "order
       title: "Salva contatto",
       url: `/api/clients/${clientId}/vcard`,
       size: "medium",
-      icon: "IconPhone",
+      brandImage: "/brands/contatti.svg",
     },
     {
       type: "map",
@@ -301,6 +301,8 @@ export async function updateWidget(
     [widgetId, clientId],
   ) as [RowDataPacket[], FieldPacket[]];
   if (existing.length === 0) return null;
+
+  console.log("[updateWidget]", widgetId, "icon:", JSON.stringify(updates.icon), "brandImage:", JSON.stringify(updates.brandImage));
 
   const sets: string[] = [];
   const values: (string | number | null)[] = [];

@@ -51,6 +51,7 @@ export const AVAILABLE_ICONS = [
   "IconPill",
   "IconBrandInstagram",
   "IconBrandGoogle",
+  "IconAddressBook",
 ] as const;
 
 export type IconName = (typeof AVAILABLE_ICONS)[number];

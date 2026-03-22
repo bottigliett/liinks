@@ -1,13 +1,18 @@
 "use client";
 
 import * as TablerIcons from "@tabler/icons-react";
+import { createElement } from "react";
 
-type IconComponent = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
+const icons = TablerIcons as unknown as Record<string, any>;
 
-const icons = TablerIcons as unknown as Record<string, IconComponent>;
+// Pre-filter valid icon components (function or forwardRef with render)
+const validIcons = new Set<string>();
+for (const key of Object.keys(icons)) {
+  const val = icons[key];
+  if (typeof val === "function" || (val && typeof val.render === "function")) {
+    validIcons.add(key);
+  }
+}
 
 export function IconRenderer({
   name,
@@ -18,7 +23,6 @@ export function IconRenderer({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const Icon = icons[name];
-  if (!Icon || typeof Icon !== "function") return null;
-  return <Icon className={className} style={style} />;
+  if (!validIcons.has(name)) return null;
+  return createElement(icons[name], { className, style });
 }

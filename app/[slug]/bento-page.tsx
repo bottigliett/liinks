@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Client, Widget, SocialPlatform, ClientStyle } from "@/lib/types";
+import { getCardBoxStyle } from "@/lib/card-styles";
 import { IconRenderer } from "@/components/icon-renderer";
 import { cn } from "@/lib/utils";
 import {
@@ -17,6 +18,11 @@ import {
   IconBrandSpotify,
   IconWorld,
   IconArrowUpRight,
+  IconLayoutGrid,
+  IconList,
+  IconSun,
+  IconMoon,
+  IconShare,
 } from "@tabler/icons-react";
 
 const SOCIAL_ICONS: Record<SocialPlatform, typeof IconBrandInstagram> = {
@@ -96,9 +102,27 @@ export function BentoPage({
   client: Client;
   widgets: Widget[];
 }) {
-  const s = client.style;
+  const originalStyle = client.style;
+  const [darkMode, setDarkMode] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState(false);
+
+  // Invert colors for dark mode
+  const s: ClientStyle = darkMode
+    ? {
+        ...originalStyle,
+        bgColor: "#18181b",
+        textColor: "#f4f4f5",
+        subtextColor: "#a1a1aa",
+        widgetBgColor: "#27272a",
+        widgetBorderColor: "#3f3f46",
+        widgetTextColor: "#f4f4f5",
+      }
+    : originalStyle;
+
   const radius = getBorderRadius(s.borderRadius);
   const trackedRef = useRef(false);
+  const [copyFeedback, setCopyFeedback] = useState<{ x: number; y: number } | null>(null);
+  const [viewMode, setViewMode] = useState<"widget" | "list">("widget");
 
   useEffect(() => {
     if (!trackedRef.current) {
@@ -106,6 +130,23 @@ export function BentoPage({
       sendTrackEvent({ clientId: client.id, type: "PAGE_VIEW" });
     }
   }, [client.id]);
+
+  useEffect(() => {
+    function handleCopyClick(e: MouseEvent) {
+      const target = (e.target as HTMLElement).closest("[data-copy]");
+      if (!target) return;
+      const container = (e.target as HTMLElement).closest(".bio-content");
+      if (!container) return;
+      e.preventDefault();
+      const text = (target as HTMLElement).getAttribute("data-copy") || "";
+      navigator.clipboard.writeText(text).then(() => {
+        setCopyFeedback({ x: e.clientX, y: e.clientY });
+        setTimeout(() => setCopyFeedback(null), 1500);
+      }).catch(() => {});
+    }
+    document.addEventListener("click", handleCopyClick);
+    return () => document.removeEventListener("click", handleCopyClick);
+  }, []);
 
   const handleWidgetClick = useCallback(
     (widgetId: string) => {
@@ -121,6 +162,14 @@ export function BentoPage({
     [client.id],
   );
 
+  const handleShare = useCallback(() => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareFeedback(true);
+      setTimeout(() => setShareFeedback(false), 1500);
+    }).catch(() => {});
+  }, []);
+
   return (
     <div
       className="min-h-screen px-4 py-12 sm:px-6"
@@ -129,12 +178,64 @@ export function BentoPage({
         fontFamily: "'Stack Sans Text', sans-serif",
       }}
     >
+      <style dangerouslySetInnerHTML={{ __html: (() => {
+        const c = encodeURIComponent(s.subtextColor);
+        const ico = (svg: string) => `url("data:image/svg+xml,${svg}")`;
+        const mail = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E`);
+        const phone = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z'/%3E%3C/svg%3E`);
+        const copy = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='14' height='14' x='8' y='8' rx='2'/%3E%3Cpath d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2'/%3E%3C/svg%3E`);
+        return [
+          `.bio-content a{text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:3px}`,
+          `.bio-content a::before{content:'';display:inline-block;width:14px;height:14px;flex-shrink:0;background-size:contain;background-repeat:no-repeat}`,
+          `.bio-content a[href^=mailto]::before{background-image:${mail}}`,
+          `.bio-content a[href^=tel]::before{background-image:${phone}}`,
+          `.bio-content a[data-copy]::before{background-image:${copy}}`,
+        ].join('');
+      })() }} />
       <div
         className={cn(
           "mx-auto max-w-[430px]",
           s.alignment === "center" ? "text-center" : "text-left",
         )}
       >
+        {/* Top bar: dark/light toggle + share */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="relative flex items-center justify-center rounded-full p-2 transition-all duration-300 active:scale-90"
+            style={{
+              backgroundColor: s.widgetBgColor,
+              borderColor: s.widgetBorderColor,
+              borderWidth: 1,
+              borderStyle: "solid",
+              boxShadow: `0 2px 0px ${s.widgetBorderColor}`,
+              color: s.widgetTextColor,
+            }}
+          >
+            {darkMode ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={handleShare}
+            className="relative flex items-center justify-center rounded-full p-2 transition-all duration-300 active:scale-90"
+            style={{
+              backgroundColor: s.widgetBgColor,
+              borderColor: s.widgetBorderColor,
+              borderWidth: 1,
+              borderStyle: "solid",
+              boxShadow: `0 2px 0px ${s.widgetBorderColor}`,
+              color: s.widgetTextColor,
+            }}
+          >
+            <IconShare className="h-4 w-4" />
+          </button>
+        </div>
+
+        {shareFeedback && (
+          <div className="pointer-events-none fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+            Link copiato!
+          </div>
+        )}
+
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -183,26 +284,81 @@ export function BentoPage({
           )}
         </motion.div>
 
+        {/* View mode toggle — icon only */}
+        {widgets.length > 0 && (
+          <div className="mb-5 flex justify-start">
+            <div
+              className="inline-flex rounded-full p-0.5"
+              style={{ backgroundColor: s.widgetBorderColor }}
+            >
+              <button
+                onClick={() => setViewMode("widget")}
+                className="relative flex items-center justify-center rounded-full p-1.5 transition-all duration-300"
+                style={{
+                  backgroundColor: viewMode === "widget" ? s.widgetBgColor : "transparent",
+                  color: viewMode === "widget" ? s.widgetTextColor : s.subtextColor,
+                  boxShadow: viewMode === "widget" ? "0 2px 0px rgba(0,0,0,0.15)" : "none",
+                }}
+              >
+                <IconLayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className="relative flex items-center justify-center rounded-full p-1.5 transition-all duration-300"
+                style={{
+                  backgroundColor: viewMode === "list" ? s.widgetBgColor : "transparent",
+                  color: viewMode === "list" ? s.widgetTextColor : s.subtextColor,
+                  boxShadow: viewMode === "list" ? "0 2px 0px rgba(0,0,0,0.15)" : "none",
+                }}
+              >
+                <IconList className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {widgets.length > 0 ? (
-          <div
-            className={cn("grid grid-cols-2", getGap(s.gridGap))}
-            style={{ gridAutoRows: `${s.rowHeight}px` }}
-          >
-            {widgets.map((widget, i) => {
-              const colSpan = getColSpan(widget.size);
-              const rowSpan = widget.rowSpan ?? getDefaultRowSpan(widget.size);
-              return (
+          viewMode === "widget" ? (
+            <div
+              className={cn("grid grid-cols-2", getGap(s.gridGap))}
+              style={{ gridAutoRows: `${s.rowHeight}px` }}
+            >
+              {widgets.map((widget, i) => {
+                const colSpan = getColSpan(widget.size);
+                const rowSpan = widget.rowSpan ?? getDefaultRowSpan(widget.size);
+                return (
+                  <motion.div
+                    key={widget.id}
+                    style={{
+                      gridColumn: `span ${colSpan}`,
+                      gridRow: `span ${rowSpan}`,
+                    }}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.4, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    <BentoWidget
+                      widget={widget}
+                      style={s}
+                      accentColor={client.accentColor}
+                      radius={radius}
+                      onWidgetClick={handleWidgetClick}
+                      onVcardClick={handleVcardClick}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {widgets.map((widget, i) => (
                 <motion.div
                   key={widget.id}
-                  style={{
-                    gridColumn: `span ${colSpan}`,
-                    gridRow: `span ${rowSpan}`,
-                  }}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.4, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: i * 0.05, ease: [0.175, 0.885, 0.32, 1.275] }}
                 >
-                  <BentoWidget
+                  <ListItem
                     widget={widget}
                     style={s}
                     accentColor={client.accentColor}
@@ -211,13 +367,22 @@ export function BentoPage({
                     onVcardClick={handleVcardClick}
                   />
                 </motion.div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )
         ) : (
           <p className="text-sm" style={{ color: s.subtextColor }}>
             Nessun contenuto ancora.
           </p>
+        )}
+
+        {copyFeedback && (
+          <div
+            className="pointer-events-none fixed z-50 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg"
+            style={{ left: copyFeedback.x, top: copyFeedback.y - 40, transform: "translateX(-50%)" }}
+          >
+            Copiato!
+          </div>
         )}
 
         <footer className="mt-12 flex items-center justify-between pb-4">
@@ -225,7 +390,7 @@ export function BentoPage({
             className="text-xs"
             style={{ color: s.textColor, opacity: 0.5 }}
           >
-            Liinks v0.1 by MISMO&reg;
+            Liinks v0.2 by MISMO&reg;
           </p>
           <Image
             src="/logo_liinks.svg"
@@ -234,7 +399,7 @@ export function BentoPage({
             height={35}
             className="h-7 w-auto"
             style={{
-              filter: s.bgColor === "#ffffff" || s.bgColor === "#f4f4f5" || s.bgColor === "#F5F5F5"
+              filter: (originalStyle.bgColor === "#ffffff" || originalStyle.bgColor === "#f4f4f5" || originalStyle.bgColor === "#F5F5F5") && !darkMode
                 ? "none"
                 : "invert(1)",
             }}
@@ -263,19 +428,13 @@ function BentoWidget({
   const bg = widget.bgColor || s.widgetBgColor;
   const textColor = widget.textColor || s.widgetTextColor;
 
-  const boxStyle: React.CSSProperties = {
-    backgroundColor: bg,
-    borderColor: s.widgetBorderColor,
-    borderWidth: 1,
-    borderRadius: radius,
-    borderStyle: "solid",
-  };
+  const boxStyle: React.CSSProperties = getCardBoxStyle(s, widget);
 
   const iconRadius = s.iconBorderRadius ?? 17;
-  const isPng = widget.brandImage?.endsWith(".png");
+  const needsBgBox = widget.brandImage?.endsWith(".png") || widget.brandImage?.endsWith(".svg");
 
   const customIcon = widget.brandImage ? (
-    isPng ? (
+    needsBgBox ? (
       <div
         className="flex shrink-0 items-center justify-center"
         style={{
@@ -368,7 +527,7 @@ function BentoWidget({
         rel="noopener noreferrer"
         onClick={() => onWidgetClick(widget.id)}
         className="group relative block h-full overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.98]"
-        style={{ borderRadius: radius, borderColor: s.widgetBorderColor, borderWidth: 1, borderStyle: "solid" }}
+        style={getCardBoxStyle(s, widget)}
       >
         {/* Tile mosaic — shifted so coordinate is at exact center */}
         <div
@@ -431,29 +590,30 @@ function BentoWidget({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => isVcard ? onVcardClick(widget.id) : onWidgetClick(widget.id)}
-        className="group flex h-full flex-col justify-between overflow-hidden p-5 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        className="group relative flex h-full flex-col justify-between p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
         style={boxStyle}
       >
-        <div>
+        <div className="min-w-0 overflow-hidden">
           {customIcon}
-          <p className={cn("text-sm font-semibold", customIcon && "mt-2")} style={{ color: textColor }}>
+          <p className={cn("truncate text-sm font-semibold pr-5", customIcon && "mt-1.5")} style={{ color: textColor }}>
             {widget.title}
           </p>
-          {widget.description && (
-            <p className="mt-1 text-xs" style={{ color: s.subtextColor }}>
+        </div>
+        <div className="min-w-0">
+          {widget.description ? (
+            <p className="line-clamp-2 text-xs pr-5" style={{ color: s.subtextColor }}>
               {widget.description}
             </p>
+          ) : (
+            <span className="truncate block text-xs" style={{ color: s.subtextColor, opacity: 0.6 }}>
+              {widget.url && (() => { try { return new URL(widget.url).hostname; } catch { return ""; } })()}
+            </span>
           )}
         </div>
-        <div className="flex items-end justify-between">
-          <span className="truncate text-xs" style={{ color: s.subtextColor, opacity: 0.6 }}>
-            {widget.url && (() => { try { return new URL(widget.url).hostname; } catch { return ""; } })()}
-          </span>
-          <IconArrowUpRight
-            className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            style={{ color: s.subtextColor }}
-          />
-        </div>
+        <IconArrowUpRight
+          className="absolute bottom-3.5 right-3.5 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          style={{ color: s.subtextColor }}
+        />
       </a>
     );
   }
@@ -467,18 +627,22 @@ function BentoWidget({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => onWidgetClick(widget.id)}
-        className="group flex h-full flex-col justify-between overflow-hidden p-5 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        className="group relative flex h-full flex-col justify-between p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
         style={boxStyle}
       >
         {customIcon || <SocialIcon className="h-8 w-8" style={{ color: accentColor }} />}
-        <div>
-          <p className="text-sm font-semibold" style={{ color: textColor }}>
-            {SOCIAL_LABELS[widget.platform]}
+        <div className="min-w-0 overflow-hidden">
+          <p className="truncate text-sm font-semibold pr-5" style={{ color: textColor }}>
+            {widget.title || SOCIAL_LABELS[widget.platform]}
           </p>
-          <p className="text-xs" style={{ color: s.subtextColor }}>
-            @{widget.username}
+          <p className="line-clamp-2 text-xs pr-5" style={{ color: s.subtextColor }}>
+            {widget.description || `@${widget.username}`}
           </p>
         </div>
+        <IconArrowUpRight
+          className="absolute bottom-3.5 right-3.5 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          style={{ color: s.subtextColor }}
+        />
       </a>
     );
   }
@@ -496,6 +660,148 @@ function BentoWidget({
         <p className="flex-1 text-xs leading-relaxed" style={{ color: s.subtextColor }}>
           {widget.content}
         </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ListItem({
+  widget,
+  style: s,
+  accentColor,
+  radius,
+  onWidgetClick,
+  onVcardClick,
+}: {
+  widget: Widget;
+  style: ClientStyle;
+  accentColor: string;
+  radius: number;
+  onWidgetClick: (widgetId: string) => void;
+  onVcardClick: (widgetId: string) => void;
+}) {
+  const textColor = widget.textColor || s.widgetTextColor;
+  const cardBox = getCardBoxStyle(s, widget);
+  const iconRadius = s.iconBorderRadius ?? 17;
+  const needsBgBox = widget.brandImage?.endsWith(".png") || widget.brandImage?.endsWith(".svg");
+
+  const listIcon = widget.brandImage ? (
+    needsBgBox ? (
+      <div
+        className="flex shrink-0 items-center justify-center"
+        style={{ width: 44, height: 44, borderRadius: iconRadius * 0.7, backgroundColor: "#F5F5F5" }}
+      >
+        <Image src={widget.brandImage} alt="" width={26} height={26} className="object-contain" style={{ width: 26, height: 26 }} />
+      </div>
+    ) : (
+      <div className="shrink-0 overflow-hidden" style={{ width: 44, height: 44, borderRadius: iconRadius * 0.7 }}>
+        <Image src={widget.brandImage} alt="" width={44} height={44} className="h-full w-full object-cover" />
+      </div>
+    )
+  ) : widget.icon ? (
+    <div
+      className="flex shrink-0 items-center justify-center"
+      style={{ width: 44, height: 44, borderRadius: iconRadius * 0.7, backgroundColor: "#F5F5F5" }}
+    >
+      <IconRenderer name={widget.icon} style={{ color: accentColor, width: 26, height: 26 }} />
+    </div>
+  ) : null;
+
+  // Map widget in list mode
+  if (widget.type === "map" && widget.lat != null && widget.lng != null) {
+    return (
+      <a
+        href={widget.url || `https://www.google.com/maps/@${widget.lat},${widget.lng},15z`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => onWidgetClick(widget.id)}
+        className="relative flex items-center gap-3 overflow-hidden px-4 py-3 transition-all active:top-[2px] active:shadow-none"
+        style={{ ...cardBox, top: 0 }}
+      >
+        <div
+          className="flex shrink-0 items-center justify-center"
+          style={{ width: 44, height: 44, borderRadius: iconRadius * 0.7, backgroundColor: "#F5F5F5" }}
+        >
+          <div className="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_8px_2px_rgba(59,130,246,0.4)]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold" style={{ color: textColor }}>
+            {widget.mapLabel || "Mappa"}
+          </p>
+        </div>
+        <IconArrowUpRight className="h-4 w-4 shrink-0" style={{ color: s.subtextColor }} />
+      </a>
+    );
+  }
+
+  // Link widget
+  if (widget.type === "link") {
+    const isVcard = widget.url?.includes("/vcard");
+    return (
+      <a
+        href={widget.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => isVcard ? onVcardClick(widget.id) : onWidgetClick(widget.id)}
+        className="relative flex items-center gap-3 px-4 py-3 transition-all active:top-[2px] active:shadow-none"
+        style={{ ...cardBox, top: 0 }}
+      >
+        {listIcon}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold" style={{ color: textColor }}>
+            {widget.title}
+          </p>
+          {widget.description && (
+            <p className="truncate text-xs" style={{ color: s.subtextColor }}>{widget.description}</p>
+          )}
+        </div>
+        <IconArrowUpRight className="h-4 w-4 shrink-0" style={{ color: s.subtextColor }} />
+      </a>
+    );
+  }
+
+  // Social widget
+  if (widget.type === "social" && widget.platform) {
+    const SocialIcon = SOCIAL_ICONS[widget.platform];
+    return (
+      <a
+        href={widget.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => onWidgetClick(widget.id)}
+        className="relative flex items-center gap-3 px-4 py-3 transition-all active:top-[2px] active:shadow-none"
+        style={{ ...cardBox, top: 0 }}
+      >
+        {listIcon || <SocialIcon className="h-6 w-6 shrink-0" style={{ color: accentColor }} />}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold" style={{ color: textColor }}>
+            {SOCIAL_LABELS[widget.platform]}
+          </p>
+          <p className="truncate text-xs" style={{ color: s.subtextColor }}>@{widget.username}</p>
+        </div>
+        <IconArrowUpRight className="h-4 w-4 shrink-0" style={{ color: s.subtextColor }} />
+      </a>
+    );
+  }
+
+  // Text widget
+  if (widget.type === "text") {
+    return (
+      <div
+        className="relative flex items-center gap-3 px-4 py-3"
+        style={{ ...cardBox, top: 0 }}
+      >
+        {listIcon}
+        <div className="min-w-0 flex-1">
+          {widget.title && (
+            <p className="truncate text-sm font-semibold" style={{ color: textColor }}>{widget.title}</p>
+          )}
+          {widget.content && (
+            <p className="line-clamp-2 text-xs leading-relaxed" style={{ color: s.subtextColor }}>{widget.content}</p>
+          )}
+        </div>
       </div>
     );
   }

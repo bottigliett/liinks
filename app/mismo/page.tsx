@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Client } from "@/lib/types";
 import { CLIENT_TEMPLATES, ClientTemplate } from "@/lib/brands";
 import Image from "next/image";
@@ -16,10 +16,6 @@ import {
   IconTemplate,
   IconFilePlus,
   IconArrowLeft,
-  IconBold,
-  IconUnderline,
-  IconList,
-  IconArrowBack,
   IconKey,
   IconEye,
   IconClick,
@@ -29,6 +25,7 @@ import {
   IconMail,
   IconCalendar,
 } from "@tabler/icons-react";
+import { RichBioEditor } from "@/components/admin/rich-bio-editor";
 
 type CreationMode = null | "choose" | "template" | "clone" | "custom";
 
@@ -87,6 +84,16 @@ function generateReviewUrlFromMapsUrl(mapsUrl: string): string | null {
   }
 }
 
+function parseMapsUrl(url: string): { lat: number; lng: number } | null {
+  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+  const placeMatch = url.match(/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (placeMatch) return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+  return null;
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -105,7 +112,6 @@ export default function AdminPage() {
   const [reviewManuallyEdited, setReviewManuallyEdited] = useState(false);
   const [resolvingMaps, setResolvingMaps] = useState(false);
   const [reviewResolveFailed, setReviewResolveFailed] = useState(false);
-  const bioRef = useRef<HTMLDivElement>(null);
 
   const fetchClients = useCallback(async () => {
     const res = await fetch("/api/clients");
@@ -166,11 +172,10 @@ export default function AdminPage() {
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const bio = bioRef.current?.innerHTML || "";
     const payload: Record<string, unknown> = {
       name: formName,
       slug: formSlug,
-      bio,
+      bio: formBio,
       accentColor: form.get("accentColor") || "#18181b",
       phone: templateFields.phone,
       email: templateFields.email,
@@ -198,6 +203,33 @@ export default function AdminPage() {
         }
         return copy;
       });
+
+      // Resolve coordinates for map widgets
+      for (const w of filledWidgets) {
+        if (w.type === "map" && w.url) {
+          let coords = parseMapsUrl(w.url);
+          if (!coords) {
+            try {
+              const res = await fetch("/api/resolve-maps-url", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: w.url }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data?.lat != null && data?.lng != null) {
+                  coords = { lat: data.lat, lng: data.lng };
+                }
+              }
+            } catch { /* ignore */ }
+          }
+          if (coords) {
+            w.lat = coords.lat;
+            w.lng = coords.lng;
+          }
+        }
+      }
+
       payload.templateWidgets = filledWidgets;
     } else if (cloneSourceId) {
       payload.cloneFromId = cloneSourceId;
@@ -219,7 +251,6 @@ export default function AdminPage() {
       setSlugManuallyEdited(false);
       setInstagramManuallyEdited(false);
       setReviewManuallyEdited(false);
-      if (bioRef.current) bioRef.current.innerHTML = "";
       fetchClients();
     }
   }
@@ -241,7 +272,6 @@ export default function AdminPage() {
     setSlugManuallyEdited(false);
     setInstagramManuallyEdited(false);
     setReviewManuallyEdited(false);
-    if (bioRef.current) bioRef.current.innerHTML = "";
   }
 
   if (status === "loading" || loading) {
@@ -267,7 +297,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <Image src="/logo_liinks.svg" alt="Liinks" width={80} height={35} className="h-7 w-auto" />
             <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-              v0.1 Beta
+              v0.2 Beta
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -386,7 +416,20 @@ export default function AdminPage() {
                   key={tpl.name}
                   onClick={() => {
                     setSelectedTemplate(tpl);
-                    if (formSlug && !instagramManuallyEdited) {
+                    if (!formName) {
+                      const name = tpl.name.toUpperCase() + " ";
+                      setFormName(name);
+                      const slug = generateSlug(name);
+                      if (!slugManuallyEdited) {
+                        setFormSlug(slug);
+                        if (!instagramManuallyEdited) {
+                          setTemplateFields((p) => ({
+                            ...p,
+                            instagramUrl: slug ? `https://www.instagram.com/${slug}/` : "",
+                          }));
+                        }
+                      }
+                    } else if (formSlug && !instagramManuallyEdited) {
                       setTemplateFields((p) => ({
                         ...p,
                         instagramUrl: `https://www.instagram.com/${formSlug}/`,
@@ -533,50 +576,10 @@ export default function AdminPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Bio</label>
-                <div className="overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-700">
-                  <div className="flex gap-1 border-b border-zinc-200 bg-zinc-50 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-                    <button
-                      type="button"
-                      onClick={() => document.execCommand("bold")}
-                      className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                      title="Grassetto"
-                    >
-                      <IconBold className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => document.execCommand("underline")}
-                      className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                      title="Sottolineato"
-                    >
-                      <IconUnderline className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => document.execCommand("insertUnorderedList")}
-                      className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                      title="Elenco puntato"
-                    >
-                      <IconList className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => document.execCommand("insertHTML", false, "<br>")}
-                      className="rounded p-1.5 text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                      title="A capo"
-                    >
-                      <IconArrowBack className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div
-                    ref={bioRef}
-                    contentEditable
-                    className="min-h-[60px] bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none dark:bg-zinc-800 dark:text-white"
-                    style={{ whiteSpace: "pre-wrap" }}
-                    onInput={() => setFormBio(bioRef.current?.innerHTML || "")}
-                    data-placeholder="Breve descrizione..."
-                  />
-                </div>
+                <RichBioEditor
+                  value={formBio}
+                  onChange={(v) => setFormBio(v)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Colore accento</label>
@@ -778,8 +781,7 @@ export default function AdminPage() {
                   setFormBio("");
                   setSlugManuallyEdited(false);
                   setInstagramManuallyEdited(false);
-                  if (bioRef.current) bioRef.current.innerHTML = "";
-                }}
+                            }}
                 className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Annulla

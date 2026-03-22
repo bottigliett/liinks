@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Widget, ClientStyle, SocialPlatform } from "@/lib/types";
+import { getCardBoxStyle } from "@/lib/card-styles";
 import { IconRenderer } from "@/components/icon-renderer";
 import { cn } from "@/lib/utils";
 import {
@@ -116,8 +117,24 @@ export function InteractivePreview({
 
   const activeWidget = activeId ? widgets.find((w) => w.id === activeId) : null;
 
+  const bioLinkStyles = (() => {
+    const c = encodeURIComponent(s.subtextColor);
+    const ico = (svg: string) => `url("data:image/svg+xml,${svg}")`;
+    const mail = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E`);
+    const phone = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z'/%3E%3C/svg%3E`);
+    const copy = ico(`%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='${c}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='14' height='14' x='8' y='8' rx='2'/%3E%3Cpath d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2'/%3E%3C/svg%3E`);
+    return [
+      `.bio-content a{text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px}`,
+      `.bio-content a::before{content:'';display:inline-block;width:11px;height:11px;flex-shrink:0;background-size:contain;background-repeat:no-repeat}`,
+      `.bio-content a[href^=mailto]::before{background-image:${mail}}`,
+      `.bio-content a[href^=tel]::before{background-image:${phone}}`,
+      `.bio-content a[data-copy]::before{background-image:${copy}}`,
+    ].join('');
+  })();
+
   return (
     <div className={s.alignment === "center" ? "text-center" : "text-left"}>
+      <style dangerouslySetInnerHTML={{ __html: bioLinkStyles }} />
       {s.showAvatar && (
         <div className={cn("mb-3", s.alignment === "center" && "flex justify-center")}>
           {avatarUrl ? (
@@ -193,11 +210,8 @@ export function InteractivePreview({
                 style={{
                   gridColumn: `span ${getColSpan(activeWidget.size)}`,
                   gridRow: `span ${getRowSpan(activeWidget)}`,
-                  backgroundColor: activeWidget.bgColor || s.widgetBgColor,
-                  borderColor: s.widgetBorderColor,
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderRadius: Math.min(radius, 16),
+                  ...getCardBoxStyle(s, activeWidget),
+                  borderRadius: Math.min(s.cardStyle === "brutal" ? 0 : radius, 16),
                   width: getColSpan(activeWidget.size) === 2 ? "100%" : "50%",
                 }}
               >
@@ -331,11 +345,9 @@ function DraggableResizableWidget({
         {...listeners}
         className="h-full w-full cursor-grab overflow-hidden p-2.5 active:cursor-grabbing"
         style={{
-          backgroundColor: widget.bgColor || s.widgetBgColor,
-          borderColor: isDragActive ? accentColor : s.widgetBorderColor,
-          borderWidth: isDragActive ? 2 : 1,
-          borderStyle: isDragActive ? "dashed" : "solid",
-          borderRadius: Math.min(radius, 16),
+          ...getCardBoxStyle(s, widget),
+          borderRadius: Math.min(s.cardStyle === "brutal" ? 0 : radius, 16),
+          ...(isDragActive ? { borderColor: accentColor, borderWidth: 2, borderStyle: "dashed" } : {}),
         }}
       >
         <WidgetContent widget={widget} style={s} accentColor={accentColor} />
@@ -381,7 +393,7 @@ function WidgetContent({
   return (
     <>
       {w.brandImage ? (
-        w.brandImage.endsWith(".png") ? (
+        (w.brandImage.endsWith(".png") || w.brandImage.endsWith(".svg")) ? (
           <div className="mb-1 flex items-center justify-center" style={{ width: 22, height: 22, borderRadius: (s.iconBorderRadius ?? 17) * 22 / 64, backgroundColor: "#F5F5F5" }}>
             <img src={w.brandImage} alt="" style={{ width: 12, height: 12, objectFit: "contain" }} />
           </div>
@@ -407,7 +419,7 @@ function WidgetContent({
         </div>
       )}
       <p className="truncate text-[10px] font-medium" style={{ color: w.textColor || s.widgetTextColor }}>
-        {w.type === "social" ? w.platform : w.type === "map" ? (w.mapLabel || "Map") : (w.title || w.content?.slice(0, 30) || "")}
+        {w.type === "social" ? (w.title || w.platform) : w.type === "map" ? (w.mapLabel || "Map") : (w.title || w.content?.slice(0, 30) || "")}
       </p>
     </>
   );

@@ -5,8 +5,11 @@ import { getClients, getClientById, createClient } from "@/lib/data";
 import sanitizeHtml from "sanitize-html";
 
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: ["b", "strong", "u", "br", "ul", "li", "p"],
-  allowedAttributes: {},
+  allowedTags: ["b", "strong", "u", "br", "ul", "li", "p", "a"],
+  allowedAttributes: {
+    a: ["href", "data-copy"],
+  },
+  allowedSchemes: ["mailto", "tel", "https", "http"],
 };
 
 function parseMapsUrl(url: string): { lat: number; lng: number } | null {

@@ -96,7 +96,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="mt-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
-          v0.1 Beta
+          v0.2 Beta
         </p>
       </div>
     </div>
