@@ -13,6 +13,7 @@ export const BRAND_IMAGES = [
 export interface ClientTemplate {
   name: string;
   description: string;
+  defaultName?: string;
   defaultAvatar?: string;
   widgets: {
     type: "link" | "social" | "text" | "map";
@@ -119,6 +120,8 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
   {
     name: "Industriale",
     description: "Template per agenzie Industriale con vCard, mappa, Instagram, sito e Google Review",
+    defaultName: "TECNOCASA IMPRESA",
+    defaultAvatar: "/brands/logo-industriale.png",
     widgets: [
       {
         type: "link",

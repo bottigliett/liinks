@@ -417,7 +417,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setSelectedTemplate(tpl);
                     if (!formName) {
-                      const name = tpl.name.toUpperCase() + " ";
+                      const name = (tpl.defaultName || tpl.name.toUpperCase()) + " ";
                       setFormName(name);
                       const slug = generateSlug(name);
                       if (!slugManuallyEdited) {
